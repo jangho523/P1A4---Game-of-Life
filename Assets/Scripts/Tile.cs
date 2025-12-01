@@ -15,13 +15,13 @@ public class Tile : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        sr = GetComponent<SpriteRenderer>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        sr = GetComponent<SpriteRenderer>();
+
     }
 
     public void OnMouseDown()

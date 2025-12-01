@@ -59,4 +59,20 @@ public class Grid2D : MonoBehaviour
             }
         }
     }
+
+    public void DestroyAllTiles()
+    {
+        for (int i = 0; i < tiles.GetLength(0); i++)
+        {
+            for (int j = 0; j < tiles.GetLength(1); j++)
+            {
+                if (tiles[i, j] != null)
+                {
+                    Destroy(tiles[i, j].gameObject);
+                }
+            }
+        }
+
+        tiles = null;
+    }
 }

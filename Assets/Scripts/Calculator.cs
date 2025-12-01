@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor.U2D.Aseprite;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Calculator : MonoBehaviour
 {
@@ -10,6 +11,12 @@ public class Calculator : MonoBehaviour
     private bool[,] nextAlive;
     private int[,] aliveCount;
     private bool isStart = false;
+    [SerializeField]
+    private bool useWrapping = false;
+    [SerializeField]
+    private bool edgeAliveMode = false;
+    [SerializeField]
+    private Toggle edgeAliveToggle;
 
     // Update is called once per frame
     void Update()
@@ -37,7 +44,7 @@ public class Calculator : MonoBehaviour
         {
             for (int j = 0; j < currentTiles.GetLength(1); j++)
             {
-                CheckNeighbours(i, j); // neighbours는 currentTiles에서만 읽음
+                CheckNeighbours(i, j);
 
                 if (currentTiles[i, j].IsAlive())
                 {
@@ -69,37 +76,285 @@ public class Calculator : MonoBehaviour
     {
         aliveCount[i, j] = 0;
 
-        if (i - 1 >= 0 && currentTiles[i - 1, j].IsAlive())
+        // Wrapping mode
+        if (useWrapping)
         {
-            aliveCount[i, j]++;
+            // Left
+            if (i - 1 == -1) // if left neighbour is out of the boundary, do wrapping
+            {
+                if (currentTiles[currentTiles.GetLength(0) - 1, j].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (currentTiles[i - 1, j].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Right
+            if (i + 1 == currentTiles.GetLength(0)) // if Right neighbour is out of the boundary, do wrapping
+            {
+                if (currentTiles[0, j].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (currentTiles[i + 1, j].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Down
+            if (j - 1 == -1) // if Down neighbour is out of the boundary, do wrapping
+            {
+                if (currentTiles[i, currentTiles.GetLength(1) - 1].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (currentTiles[i, j - 1].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Up
+            if (j + 1 == currentTiles.GetLength(1)) // if Up neighbour is out of the boundary, do wrapping
+            {
+                if (currentTiles[i, 0].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (currentTiles[i, j + 1].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Left Down
+            if (i - 1 == -1 || j - 1 == -1)
+            {
+                if (i - 1 == -1 && j - 1 == -1)
+                {
+                    if (currentTiles[currentTiles.GetLength(0) - 1, currentTiles.GetLength(1) - 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i - 1 == -1 && j - 1 >= 0)
+                {
+                    if (currentTiles[currentTiles.GetLength(0) - 1, j - 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i - 1 >= 0 && j - 1 == -1)
+                {
+                    if (currentTiles[i - 1, currentTiles.GetLength(1) - 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+            }
+            else if (currentTiles[i - 1, j - 1].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Right Up
+            if (i + 1 == currentTiles.GetLength(0) || j + 1 == currentTiles.GetLength(1))
+            {
+                if (i + 1 == currentTiles.GetLength(0) && j + 1 == currentTiles.GetLength(1))
+                {
+                    if (currentTiles[0, 0].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i + 1 == currentTiles.GetLength(0) && j + 1 < currentTiles.GetLength(1))
+                {
+                    if (currentTiles[0, j + 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i + 1 < currentTiles.GetLength(0) && j + 1 == currentTiles.GetLength(1))
+                {
+                    if (currentTiles[i + 1, 0].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+            }
+            else if (currentTiles[i + 1, j + 1].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Right Down
+            if (i + 1 == currentTiles.GetLength(0) || j - 1 == -1)
+            {
+                if (i + 1 == currentTiles.GetLength(0) && j - 1 == -1)
+                {
+                    if (currentTiles[0, currentTiles.GetLength(1) - 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i + 1 == currentTiles.GetLength(0) && j - 1 >= 0)
+                {
+                    if (currentTiles[0, j - 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i + 1 < currentTiles.GetLength(0) && j - 1 == -1)
+                {
+                    if (currentTiles[i + 1, currentTiles.GetLength(1) - 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+            }
+            else if (currentTiles[i + 1, j - 1].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Left Up
+            if (i - 1 == -1 || j + 1 == currentTiles.GetLength(1))
+            {
+                if (i - 1 == -1 && j + 1 == currentTiles.GetLength(1))
+                {
+                    if (currentTiles[currentTiles.GetLength(0) - 1, 0].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i - 1 == -1 && j + 1 < currentTiles.GetLength(1))
+                {
+                    if (currentTiles[currentTiles.GetLength(0) - 1, j + 1].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+                else if (i - 1 >= 0 && j + 1 == currentTiles.GetLength(1))
+                {
+                    if (currentTiles[i - 1, 0].IsAlive())
+                    {
+                        aliveCount[i, j]++;
+                    }
+                }
+            }
+            else if (currentTiles[i - 1, j + 1].IsAlive()) // if it's not out of the boundary, just count it
+            {
+                aliveCount[i, j]++;
+            }
         }
-        if (i + 1 < currentTiles.GetLength(0) && currentTiles[i + 1, j].IsAlive())
+        else if(!useWrapping) // Walls mode
         {
-            aliveCount[i, j]++;
-        }
-        if (j - 1 >= 0 && currentTiles[i, j - 1].IsAlive())
-        {
-            aliveCount[i, j]++;
-        }
-        if (j + 1 < currentTiles.GetLength(1) && currentTiles[i, j + 1].IsAlive())
-        {
-            aliveCount[i, j]++;
-        }
-        if (i - 1 >= 0 && j - 1 >= 0 && currentTiles[i - 1, j - 1].IsAlive())
-        {
-            aliveCount[i, j]++;
-        }
-        if (i + 1 < currentTiles.GetLength(0) && j + 1 < currentTiles.GetLength(1) && currentTiles[i + 1, j + 1].IsAlive())
-        {
-            aliveCount[i, j]++;
-        }
-        if (i + 1 < currentTiles.GetLength(0) && j - 1 >= 0 && currentTiles[i + 1, j - 1].IsAlive())
-        {
-            aliveCount[i, j]++;
-        }
-        if (i - 1 >= 0 && j + 1 < currentTiles.GetLength(1) && currentTiles[i - 1, j + 1].IsAlive())
-        {
-            aliveCount[i, j]++;
+            if (i - 1 >= 0)
+            {
+                if (currentTiles[i - 1, j].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Right
+            if (i + 1 < currentTiles.GetLength(0))
+            {
+                if (currentTiles[i + 1, j].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Down
+            if (j - 1 >= 0)
+            {
+                if (currentTiles[i, j - 1].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Up
+            if (j + 1 < currentTiles.GetLength(1))
+            {
+                if (currentTiles[i, j + 1].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Left Down
+            if (i - 1 >= 0 && j - 1 >= 0)
+            {
+                if (currentTiles[i - 1, j - 1].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Right Up
+            if (i + 1 < currentTiles.GetLength(0) && j + 1 < currentTiles.GetLength(1))
+            {
+                if (currentTiles[i + 1, j + 1].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Right Down
+            if (i + 1 < currentTiles.GetLength(0) && j - 1 >= 0)
+            {
+                if (currentTiles[i + 1, j - 1].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
+
+            // Left Up (i - 1, j + 1)
+            if (i - 1 >= 0 && j + 1 < currentTiles.GetLength(1))
+            {
+                if (currentTiles[i - 1, j + 1].IsAlive())
+                {
+                    aliveCount[i, j]++;
+                }
+            }
+            else if (edgeAliveMode)
+            {
+                aliveCount[i, j]++;
+            }
         }
     }
 
@@ -119,5 +374,21 @@ public class Calculator : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void SetUseWrapping(bool value)
+    {
+        useWrapping = value;
+
+        if (useWrapping)
+        {
+            edgeAliveMode = false;
+            edgeAliveToggle.isOn = false;
+        }
+    }
+
+    public void SetEdgeAliveMode(bool value)
+    {
+        edgeAliveMode = value;
     }
 }
