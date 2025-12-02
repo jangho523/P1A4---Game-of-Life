@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Tilemaps;
+using Unity.VisualScripting;
 
 public class GameManager : MonoBehaviour
 {
@@ -39,31 +41,43 @@ public class GameManager : MonoBehaviour
     private Text generationText;
     [SerializeField]
     private Text RunSpeedText;
+    [SerializeField]
+    private RuleSequence ruleSequence;
+    [SerializeField]
+    private Tilemap tilemap;
+    [SerializeField]
+    private RuleTile landTile;
+    [SerializeField]
+    private TileBase waterTile;
 
     // --- Pattern Stamping ---
     private enum StampPattern
     {
         None,
+        Block,
         Blinker,
-        Glider,
-        Block
+        Glider
     }
     private StampPattern currentPattern = StampPattern.None;
+
+    public void SelectBlock()
+    {
+        currentPattern = StampPattern.Block;
+        LoadCenterPattern();
+    }
 
     public void SelectBlinker()
     {
         currentPattern = StampPattern.Blinker;
+        LoadCenterPattern();
     }
 
     public void SelectGlider()
     {
         currentPattern = StampPattern.Glider;
+        LoadCenterPattern();
     }
 
-    public void SelectBlock()
-    {
-        currentPattern = StampPattern.Block;
-    }
 
     public void ClearPattern()
     {
@@ -90,6 +104,35 @@ public class GameManager : MonoBehaviour
                 timer = 0f;
             }
         }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+            Vector3Int cellPosition = tilemap.WorldToCell(mouseWorldPos);
+
+            Tile[,] tiles = grid.GetTiles();
+            int width = tiles.GetLength(0);
+            int height = tiles.GetLength(1);
+
+            if (cellPosition.x < 0 || cellPosition.x >= width ||
+                cellPosition.y < 0 || cellPosition.y >= height)
+            {
+                return;
+            }
+
+            Tile tile = tiles[cellPosition.x, cellPosition.y];
+
+            if (tile.IsAlive())
+            {
+                tile.ResetTile();
+            }
+            else
+            {
+                tile.ActivateTile();
+            }
+
+            UpdateTilemap(tiles);
+        }
     }
 
     public void ToggleRun()
@@ -109,8 +152,11 @@ public class GameManager : MonoBehaviour
 
     public void OneStep()
     {
+        int index = generation % ruleSequence.rules.Count;
+        calculator.SetRule(ruleSequence.rules[index]);
         calculator.Initiate(grid.GetTiles());
         generation++;
+        UpdateTilemap(grid.GetTiles());
         generationText.text = "Generation: " + generation.ToString();
     }
 
@@ -134,7 +180,7 @@ public class GameManager : MonoBehaviour
 
         mainCamera.transform.position = new Vector3(posX, posY, -10f);
 
-        if(gridSizeX >= gridSizeY)
+        if (gridSizeX >= gridSizeY)
         {
             mainCamera.orthographicSize = (gridSizeX / 2f) + 3f;
         }
@@ -202,6 +248,37 @@ public class GameManager : MonoBehaviour
             isRunning = false;
             RunPauseButtonText.text = "Run";
         }
+
+
+    }
+
+    public void LoadCenterPattern()
+    {
+        ResetSimulation();
+
+        Tile[,] tiles = grid.GetTiles();
+
+        int centerX = tiles.GetLength(0) / 2;
+        int centerY = tiles.GetLength(1) / 2;
+
+        switch (currentPattern)
+        {
+            case StampPattern.Blinker:
+                StampBlinker(tiles, centerX, centerY);
+                break;
+
+            case StampPattern.Glider:
+                StampGlider(tiles, centerX, centerY);
+                break;
+
+            case StampPattern.Block:
+                StampBlock(tiles, centerX, centerY);
+                break;
+
+            case StampPattern.None:
+                Debug.Log("No pattern selected.");
+                break;
+        }
     }
 
     public void SetAliveChance(float value)
@@ -227,33 +304,56 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    //private void ActivateStampTiles(Tile[,] tiles, int x, int y)
-    //{
-    //    // within boundary
-    //    if (x >= 0 && x < tiles.GetLength(0) && y >= 0 && y < tiles.GetLength(1))
-    //    {
-    //        tiles[x, y].ActivateTile();
-    //    }
-    //}
+    private void ActivateStampTiles(Tile[,] tiles, int x, int y)
+    {
+        // within boundary
+        if (x >= 0 && x < tiles.GetLength(0) && y >= 0 && y < tiles.GetLength(1))
+        {
+            tiles[x, y].ActivateTile();
+        }
+    }
 
-    //private void StampBlinker(Tile[,] tiles, int centerX, int centerY)
-    //{
-    //    ActivateStampTiles(tiles, centerX, centerY - 1);
-    //    ActivateStampTiles(tiles, centerX, centerY + 1);
-    //}
+    private void StampBlinker(Tile[,] tiles, int centerX, int centerY)
+    {
+        ActivateStampTiles(tiles, centerX, centerY);
+        ActivateStampTiles(tiles, centerX, centerY - 1);
+        ActivateStampTiles(tiles, centerX, centerY + 1);
+    }
 
-    //private void StampGlider(Tile[,] tiles, int centerX, int centerY)
-    //{
-    //    ActivateStampTiles(tiles, centerX + 1, centerY);
-    //    ActivateStampTiles(tiles, centerX + 1, centerY + 1);
-    //    ActivateStampTiles(tiles, centerX, centerY - 1);
-    //    ActivateStampTiles(tiles, centerX - 1, centerY + 1);
-    //}
+    private void StampGlider(Tile[,] tiles, int centerX, int centerY)
+    {
+        ActivateStampTiles(tiles, centerX, centerY);
+        ActivateStampTiles(tiles, centerX + 1, centerY);
+        ActivateStampTiles(tiles, centerX + 1, centerY + 1);
+        ActivateStampTiles(tiles, centerX, centerY - 1);
+        ActivateStampTiles(tiles, centerX - 1, centerY + 1);
+    }
 
-    //private void StampBlock(Tile[,] tiles, int centerX, int centerY)
-    //{
-    //    ActivateStampTiles(tiles, centerX + 1, centerY);
-    //    ActivateStampTiles(tiles, centerX, centerY + 1);
-    //    ActivateStampTiles(tiles, centerX + 1, centerY + 1);
-    //}
+    private void StampBlock(Tile[,] tiles, int centerX, int centerY)
+    {
+        ActivateStampTiles(tiles, centerX, centerY);
+        ActivateStampTiles(tiles, centerX + 1, centerY);
+        ActivateStampTiles(tiles, centerX, centerY + 1);
+        ActivateStampTiles(tiles, centerX + 1, centerY + 1);
+    }
+
+    private void UpdateTilemap(Tile[,] tiles)
+    {
+        tilemap.ClearAllTiles();
+
+        for (int x = 0; x < tiles.GetLength(0); x++)
+        {
+            for (int y = 0; y < tiles.GetLength(1); y++)
+            {
+                if (tiles[x, y].IsAlive())
+                {
+                    tilemap.SetTile(new Vector3Int(x, y, 0), landTile);
+                }
+                else
+                {
+                    tilemap.SetTile(new Vector3Int(x, y, 0), waterTile);
+                }
+            }
+        }
+    }
 }

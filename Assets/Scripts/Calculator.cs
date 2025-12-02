@@ -18,6 +18,15 @@ public class Calculator : MonoBehaviour
     [SerializeField]
     private Toggle edgeAliveToggle;
 
+    // Rule SO
+    [SerializeField]
+    private GameRule gameRule;
+
+    public void SetRule(GameRule rule)
+    {
+        gameRule = rule;
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -48,24 +57,24 @@ public class Calculator : MonoBehaviour
 
                 if (currentTiles[i, j].IsAlive())
                 {
-                    if (aliveCount[i, j] < 2 || aliveCount[i, j] > 3)
+                    if (gameRule.useAliveRule)
                     {
-                        nextAlive[i, j] = false;
+                        nextAlive[i, j] = gameRule.aliveRule[aliveCount[i, j]];
                     }
                     else
                     {
-                        nextAlive[i, j] = true;
+                        nextAlive[i, j] = currentTiles[i, j].IsAlive();
                     }
                 }
                 else
                 {
-                    if (aliveCount[i, j] == 3)
+                    if (gameRule.useDeadRule)
                     {
-                        nextAlive[i, j] = true;
+                        nextAlive[i, j] = gameRule.deadRule[aliveCount[i, j]];
                     }
                     else
                     {
-                        nextAlive[i, j] = false;
+                        nextAlive[i, j] = currentTiles[i, j].IsAlive();
                     }
                 }
             }
