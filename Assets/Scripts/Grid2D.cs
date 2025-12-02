@@ -45,7 +45,6 @@ public class Grid2D : MonoBehaviour
         tiles[xPosition, yPosition] = tile;
 
         Vector3 newPosition = new Vector3(xPosition, yPosition, 0);
-
         tile.transform.position = newPosition;
     }
 

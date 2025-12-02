@@ -40,6 +40,36 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     private Text RunSpeedText;
 
+    // --- Pattern Stamping ---
+    private enum StampPattern
+    {
+        None,
+        Blinker,
+        Glider,
+        Block
+    }
+    private StampPattern currentPattern = StampPattern.None;
+
+    public void SelectBlinker()
+    {
+        currentPattern = StampPattern.Blinker;
+    }
+
+    public void SelectGlider()
+    {
+        currentPattern = StampPattern.Glider;
+    }
+
+    public void SelectBlock()
+    {
+        currentPattern = StampPattern.Block;
+    }
+
+    public void ClearPattern()
+    {
+        currentPattern = StampPattern.None;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -196,4 +226,34 @@ public class GameManager : MonoBehaviour
             RunSpeedText.text = "Run Speed";
         }
     }
+
+    //private void ActivateStampTiles(Tile[,] tiles, int x, int y)
+    //{
+    //    // within boundary
+    //    if (x >= 0 && x < tiles.GetLength(0) && y >= 0 && y < tiles.GetLength(1))
+    //    {
+    //        tiles[x, y].ActivateTile();
+    //    }
+    //}
+
+    //private void StampBlinker(Tile[,] tiles, int centerX, int centerY)
+    //{
+    //    ActivateStampTiles(tiles, centerX, centerY - 1);
+    //    ActivateStampTiles(tiles, centerX, centerY + 1);
+    //}
+
+    //private void StampGlider(Tile[,] tiles, int centerX, int centerY)
+    //{
+    //    ActivateStampTiles(tiles, centerX + 1, centerY);
+    //    ActivateStampTiles(tiles, centerX + 1, centerY + 1);
+    //    ActivateStampTiles(tiles, centerX, centerY - 1);
+    //    ActivateStampTiles(tiles, centerX - 1, centerY + 1);
+    //}
+
+    //private void StampBlock(Tile[,] tiles, int centerX, int centerY)
+    //{
+    //    ActivateStampTiles(tiles, centerX + 1, centerY);
+    //    ActivateStampTiles(tiles, centerX, centerY + 1);
+    //    ActivateStampTiles(tiles, centerX + 1, centerY + 1);
+    //}
 }
