@@ -2,29 +2,39 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/*
+ * Grid2D
+ * 
+ * Creates and manages a 2D grid of Tile objects.
+ * 
+ */
 public class Grid2D : MonoBehaviour
 {
     private Tile[,] tiles;
     [SerializeField]
     private Tile tilePrefab;
 
+    /* GetTiles
+     * 
+     * Returns the tile grid.
+     * 
+     * Parameters: None
+     * 
+     * Return: Tile[,]
+     */
     public Tile[,] GetTiles()
     {
         return tiles;
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
+    /* CreateGrid2D
+     * 
+     * Creates a new grid and spawns all tile instances.
+     * 
+     * Parameters: sizeX, sizeY
+     * 
+     * Return: None
+     */
     public void CreateGrid2D(int sizeX, int sizeY)
     {
         tiles = new Tile[sizeX, sizeY];
@@ -38,6 +48,15 @@ public class Grid2D : MonoBehaviour
         }
     }
 
+
+    /* CreateOneTile
+     * 
+     * Instantiates one tile at (xPosition, yPosition).
+     * 
+     * Parameters: xPosition, yPosition
+     * 
+     * Return: None
+     */
     private void CreateOneTile(int xPosition, int yPosition)
     {
         Tile tile = Instantiate(tilePrefab);
@@ -48,6 +67,14 @@ public class Grid2D : MonoBehaviour
         tile.transform.position = newPosition;
     }
 
+    /* ResetTiles
+     * 
+     * Resets all tiles in the grid to dead state.
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void ResetTiles()
     {
         for (int i = 0; i < tiles.GetLength(0); i++)
@@ -59,6 +86,14 @@ public class Grid2D : MonoBehaviour
         }
     }
 
+    /* DestroyAllTiles
+     * 
+     * Destroys all spawned tiles and clears the grid reference.
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void DestroyAllTiles()
     {
         for (int i = 0; i < tiles.GetLength(0); i++)

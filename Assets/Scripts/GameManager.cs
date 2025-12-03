@@ -5,15 +5,28 @@ using UnityEngine.UI;
 using UnityEngine.Tilemaps;
 using Unity.VisualScripting;
 
+/*
+ * GameManager
+ * 
+ * Handles the overall Game of Life simulation
+ * 
+ * grid creation, UI controls, rule switching, stepping, and tilemap updates.
+ */
 public class GameManager : MonoBehaviour
 {
-    [SerializeField]
-    private Grid2D grid;
-
-    [SerializeField]
-    private Calculator calculator;
+    // --- For Rule Mode Slider ---
+    private enum RuleMode
+    {
+        SingleRule,
+        RuleSequence
+    }
 
     // --- Grid Settings ---
+    [Header("Grid Settings")]
+    [SerializeField]
+    private RuleMode ruleMode = RuleMode.RuleSequence;
+    [SerializeField]
+    private GameRule singleRule;
     [SerializeField]
     private int gridSizeX = 10;
     [SerializeField]
@@ -29,6 +42,7 @@ public class GameManager : MonoBehaviour
     private int generation = 0;
 
     // --- references --- 
+    [Header("References")]
     [SerializeField]
     private Camera mainCamera;
     [SerializeField]
@@ -49,6 +63,12 @@ public class GameManager : MonoBehaviour
     private RuleTile landTile;
     [SerializeField]
     private TileBase waterTile;
+    [SerializeField]
+    private Grid2D grid;
+    [SerializeField]
+    private Calculator calculator;
+    [SerializeField]
+    private GameRule[] ruleOptions;
 
     // --- Pattern Stamping ---
     private enum StampPattern
@@ -60,35 +80,12 @@ public class GameManager : MonoBehaviour
     }
     private StampPattern currentPattern = StampPattern.None;
 
-    public void SelectBlock()
-    {
-        currentPattern = StampPattern.Block;
-        LoadCenterPattern();
-    }
-
-    public void SelectBlinker()
-    {
-        currentPattern = StampPattern.Blinker;
-        LoadCenterPattern();
-    }
-
-    public void SelectGlider()
-    {
-        currentPattern = StampPattern.Glider;
-        LoadCenterPattern();
-    }
-
-
-    public void ClearPattern()
-    {
-        currentPattern = StampPattern.None;
-    }
-
     // Start is called before the first frame update
     void Start()
     {
         grid.CreateGrid2D(gridSizeX, gridSizeY);
         SetCamera();
+        UpdateTilemap(grid.GetTiles());
     }
 
     // Update is called once per frame
@@ -107,6 +104,7 @@ public class GameManager : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
+            // Get the mouse position
             Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
             Vector3Int cellPosition = tilemap.WorldToCell(mouseWorldPos);
 
@@ -114,27 +112,34 @@ public class GameManager : MonoBehaviour
             int width = tiles.GetLength(0);
             int height = tiles.GetLength(1);
 
-            if (cellPosition.x < 0 || cellPosition.x >= width ||
-                cellPosition.y < 0 || cellPosition.y >= height)
+            // select the tile under it
+            if (cellPosition.x >= 0 && cellPosition.x < width && cellPosition.y >= 0 && cellPosition.y < height)
             {
-                return;
-            }
+                Tile tile = tiles[cellPosition.x, cellPosition.y];
 
-            Tile tile = tiles[cellPosition.x, cellPosition.y];
+                // toggles its state.
+                if (tile.IsAlive())
+                {
+                    tile.ResetTile();
+                }
+                else
+                {
+                    tile.ActivateTile();
+                }
 
-            if (tile.IsAlive())
-            {
-                tile.ResetTile();
+                UpdateTilemap(tiles);
             }
-            else
-            {
-                tile.ActivateTile();
-            }
-
-            UpdateTilemap(tiles);
         }
     }
-
+    
+    /* ToggleRun
+     * 
+     * Starts or pauses the simulation.
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void ToggleRun()
     {
         isRunning = !isRunning;
@@ -150,16 +155,41 @@ public class GameManager : MonoBehaviour
         }
     }
 
+
+    /* OneStep
+     * 
+     * Do one generation step based on the selected rule mode
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void OneStep()
     {
-        int index = generation % ruleSequence.rules.Count;
-        calculator.SetRule(ruleSequence.rules[index]);
+        if(ruleMode == RuleMode.SingleRule)
+        {
+            calculator.SetRule(singleRule);
+        }
+        else if(ruleMode == RuleMode.RuleSequence)
+        {
+            int index = generation % ruleSequence.rules.Count; // to limit index value 
+            calculator.SetRule(ruleSequence.rules[index]);
+        }
+
         calculator.Initiate(grid.GetTiles());
         generation++;
-        UpdateTilemap(grid.GetTiles());
+        UpdateTilemap(grid.GetTiles()); // Tilemape visual update
         generationText.text = "Generation: " + generation.ToString();
     }
 
+    /* ResetSimulation
+     * 
+     * Resets grid, generation count, and stops the simulation.
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void ResetSimulation()
     {
         grid.ResetTiles();
@@ -171,8 +201,17 @@ public class GameManager : MonoBehaviour
             isRunning = false;
             RunPauseButtonText.text = "Run";
         }
+        UpdateTilemap(grid.GetTiles());
     }
 
+    /* SetCamera
+     * 
+     * set the camera view to the center and adjusts zoom based on grid size
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void SetCamera()
     {
         float posX = (gridSizeX - 1) / 2f;
@@ -189,7 +228,17 @@ public class GameManager : MonoBehaviour
             mainCamera.orthographicSize = (gridSizeY / 2f) + 3f;
         }
     }
-
+    
+    /* GridSizeChange
+     * 
+     * Updates grid size value and recreates the grid.
+     * 
+     * it is called by the grid size slider.
+     * 
+     * Parameters: value
+     * 
+     * Return: None
+     */
     public void GridSizeChange(float value)
     {
         int newSize = Mathf.RoundToInt(value);
@@ -202,6 +251,14 @@ public class GameManager : MonoBehaviour
         RecreateGrid();
     }
 
+    /* RecreateGrid
+     * 
+     * Recreate all tiles and simulation state after changing grid size with the slider.
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void RecreateGrid()
     {
         grid.DestroyAllTiles();
@@ -217,8 +274,19 @@ public class GameManager : MonoBehaviour
             RunPauseButtonText.text = "Run";
         }
         SetCamera();
+        UpdateTilemap(grid.GetTiles());
     }
 
+    /* RandomizeGrid
+     * 
+     * Randomly activates tiles based on aliveChance
+     * 
+     * connected with Randomize UI button
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void RandomizeGrid()
     {
         grid.ResetTiles();
@@ -248,10 +316,18 @@ public class GameManager : MonoBehaviour
             isRunning = false;
             RunPauseButtonText.text = "Run";
         }
-
-
+        UpdateTilemap(grid.GetTiles());
     }
 
+
+    /* LoadCenterPattern
+     * 
+     * Loads the selected pattern at the grid center.
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void LoadCenterPattern()
     {
         ResetSimulation();
@@ -279,14 +355,35 @@ public class GameManager : MonoBehaviour
                 Debug.Log("No pattern selected.");
                 break;
         }
+        UpdateTilemap(grid.GetTiles());
     }
 
+    /* SetAliveChance
+     * 
+     * Updates aliveChance value and refreshes UI text.
+     * 
+     * connected with the Alive chance slider
+     * 
+     * Parameters: value
+     * 
+     * Return: None
+     */
     public void SetAliveChance(float value)
     {
         aliveChance = Mathf.RoundToInt(value * 100f);
         aliveChanceText.text = "Alive chance: " + aliveChance.ToString() + "%";
     }
 
+    /* SetRunSpeed
+     * 
+     * Changes simulation speed and updates UI text.
+     * 
+     * connected with the Run Speed slider
+     * 
+     * Parameters: value
+     * 
+     * Return: None
+     */
     public void SetRunSpeed(float value)
     {
         if (value >= 1.99f)
@@ -304,15 +401,31 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /* ActivateStampTiles
+     * 
+     * Activates a tile if within grid bounds.
+     * 
+     * Parameters: tiles, x, y
+     * 
+     * Return: None
+     */
     private void ActivateStampTiles(Tile[,] tiles, int x, int y)
     {
-        // within boundary
+        // within boundary (actually it's a pointless condition since it's always placed at the center but maybe for the future features)
         if (x >= 0 && x < tiles.GetLength(0) && y >= 0 && y < tiles.GetLength(1))
         {
             tiles[x, y].ActivateTile();
         }
     }
 
+    /* StampBlinker , Glider, Block
+     * 
+     * Places these patterns at the center.
+     * 
+     * Parameters: tiles, centerX, centerY
+     * 
+     * Return: None
+     */
     private void StampBlinker(Tile[,] tiles, int centerX, int centerY)
     {
         ActivateStampTiles(tiles, centerX, centerY);
@@ -337,6 +450,15 @@ public class GameManager : MonoBehaviour
         ActivateStampTiles(tiles, centerX + 1, centerY + 1);
     }
 
+
+    /* UpdateTilemap
+     * 
+     * Updates the Tilemap to match tile alive/dead states.(tilemap visual update)
+     * 
+     * Parameters: tiles
+     * 
+     * Return: None
+     */
     private void UpdateTilemap(Tile[,] tiles)
     {
         tilemap.ClearAllTiles();
@@ -355,5 +477,73 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    /* SelectBlock
+     * 
+     * Sets the pattern to Block and loads it at center
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
+    public void SelectBlock()
+    {
+        currentPattern = StampPattern.Block;
+        LoadCenterPattern();
+    }
+
+    /* SelectBlinker
+     * 
+     * Sets the pattern to Blinker and loads it at center
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
+    public void SelectBlinker()
+    {
+        currentPattern = StampPattern.Blinker;
+        LoadCenterPattern();
+    }
+
+    /* SelectGlider
+     * 
+     * Sets the pattern to Glider and loads it at center.
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
+    public void SelectGlider()
+    {
+        currentPattern = StampPattern.Glider;
+        LoadCenterPattern();
+    }
+
+    /* SetRuleMode
+     * 
+     * Changes between SingleRule and RuleSequence modes(Dropdown UI)
+     * 
+     * Parameters: value
+     * 
+     * Return: None
+     */
+    public void SetRuleMode(int value)
+    {
+        ruleMode = (RuleMode)value;
+    }
+
+    /* SetSingleRule
+     * 
+     * Selects a rule from ruleOptions for SingleRule mode.(Dropdown UI)
+     * 
+     * Parameters: index
+     * 
+     * Return: None
+     */
+    public void SetSingleRule(int index)
+    {
+        singleRule = ruleOptions[index];
     }
 }

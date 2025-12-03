@@ -1,16 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
-using UnityEditor.U2D.Aseprite;
 using UnityEngine;
 using UnityEngine.UI;
 
+/*
+ * Calculator
+ * 
+ * Handles all Game of Life simulation logic:
+ * 
+ * neighbour counting, rule application, and next generation updates.
+ */
 public class Calculator : MonoBehaviour
 {
-    private Tile[,] currentTiles;
-    private bool[,] nextAlive;
+    // --- Simulation Data ---
+    private Tile[,] currentTiles; 
+    private bool[,] nextAlive; // Temporary array that stores the next step's alive/dead states
     private int[,] aliveCount;
     private bool isStart = false;
+
+    // --- Wrapping Options ---
     [SerializeField]
     private bool useWrapping = false;
     [SerializeField]
@@ -18,10 +27,19 @@ public class Calculator : MonoBehaviour
     [SerializeField]
     private Toggle edgeAliveToggle;
 
-    // Rule SO
+    // --- Rule SO ---
     [SerializeField]
     private GameRule gameRule;
 
+
+    /* SetRule
+     * 
+     * Assigns a GameRuleSO to be used for the next generation calculation.
+     * 
+     * Parameters: rule GameRule
+     * 
+     * Return: None
+     */
     public void SetRule(GameRule rule)
     {
         gameRule = rule;
@@ -38,6 +56,14 @@ public class Calculator : MonoBehaviour
         }
     }
 
+    /* Initiate
+     * 
+     * Sets internal references and initializes buffers
+     * 
+     * Parameters: getTiles. the grid of Tile objects
+     * 
+     * Return: None
+     */
     public void Initiate(Tile[,] getTiles)
     {
         isStart = true;
@@ -47,6 +73,17 @@ public class Calculator : MonoBehaviour
         nextAlive = new bool[currentTiles.GetLength(0), currentTiles.GetLength(1)];
     }
 
+
+    /* CalculateTiles
+     * 
+     * Calculate tiles if they are Alive tiles or Dead tiles by the setting rule
+     * 
+     * and store result value in the nextAlive array
+     * 
+     * Parameters: None
+     * 
+     * Return: None
+     */
     public void CalculateTiles()
     {
         for (int i = 0; i < currentTiles.GetLength(0); i++)
@@ -81,6 +118,14 @@ public class Calculator : MonoBehaviour
         }
     }
 
+    /* CheckNeighbours
+    * 
+    * Counts all 8 neighbouring cells whether they are alive or dead
+    * 
+    * Parameters: i, j
+    * 
+    * Return: None
+    */
     public void CheckNeighbours(int i, int j)
     {
         aliveCount[i, j] = 0;
@@ -367,6 +412,14 @@ public class Calculator : MonoBehaviour
         }
     }
 
+   /* UpdateTiles
+    * 
+    * update current tiles with nextAlive array
+    * 
+    * Parameters: None
+    * 
+    * Return: None
+    */
     public void UpdateTiles()
     {
         for (int i = 0; i < currentTiles.GetLength(0); i++)
@@ -385,6 +438,16 @@ public class Calculator : MonoBehaviour
         }
     }
 
+   /* SetUseWrapping
+    * 
+    * Toggles wrapping mode for neighbour checks.
+    * 
+    * Disables edge alive mode when wrapping is enabled.
+    * 
+    * Parameters: bool value
+    * 
+    * Return: None
+    */
     public void SetUseWrapping(bool value)
     {
         useWrapping = value;
@@ -396,6 +459,14 @@ public class Calculator : MonoBehaviour
         }
     }
 
+   /* SetEdgeAliveMode
+    * 
+    * Toggles wall edge alive behavior for neighbour checks.
+    * 
+    * Parameters: bool value
+    * 
+    * Return: None
+    */
     public void SetEdgeAliveMode(bool value)
     {
         edgeAliveMode = value;
